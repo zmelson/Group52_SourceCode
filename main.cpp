@@ -214,11 +214,8 @@ int main()
 
     int fTotal = 0;
     for (auto a : data)
-    {
         for (auto b : a.second)
             fTotal += b.second.size();
-    }
-    cout << fTotal << endl;
 
     // CARRIERS
     unordered_map<int, string> carrier;
@@ -262,7 +259,6 @@ int main()
     sf::Font font;
     if (!font.loadFromFile("../data/arial.ttf"))
             std::cout << "can't load" << std::endl;
-
 
     sf::Text totalFlights;
     totalFlights.setFont(font);
@@ -312,9 +308,6 @@ int main()
     hAccess.setPosition(title2.getPosition().x, mapUS.getGlobalBounds().height + 20 + title1.getGlobalBounds().height);
     hAccess.setCharacterSize(40);
     hAccess.setFillColor(sf::Color::White);
-
-
-
 
     sf::Text fromText;
     fromText.setFont(font);
@@ -381,12 +374,15 @@ int main()
     prev.setPosition(test1.getPosition().x + 20,mapUS.getGlobalBounds().height + 100);
     prev.setScale(0.07,0.07);
 
+    sf::Sprite restart;
+    restart.setTexture(TextureManager::GetTexture("restart32"));
+    restart.setPosition((mapUS.getGlobalBounds().width) - 50,mapUS.getGlobalBounds().height - 50);
+
     sf::Text posCount;
     posCount.setFont(font);
     posCount.setCharacterSize(30);
     posCount.setPosition(test1.getPosition().x + 20,mapUS.getGlobalBounds().height + 50);
     posCount.setFillColor(sf::Color::White);
-
 
     sf::RectangleShape sepRight;
     sepRight.setSize(sf::Vector2f(3, sf::VideoMode::getDesktopMode().height));
@@ -424,8 +420,6 @@ int main()
     int numResults = 0;
     int pos = 0;
 
-    // bool paused = false;
-
     while (window.isOpen())
     {
         sf::Event event;
@@ -433,15 +427,6 @@ int main()
         {
             if (event.type == sf::Event::Closed)
                 window.close();
-            // else if (event.type == event.MouseButtonPressed && event.type == event.MouseButtonReleased)
-            // {
-            //     cout << "HI";
-            // }
-            // else if (event.type == event.MouseButtonPressed)
-            // {
-            //     cout << "Reset";
-            //     paused = false;
-            // }
             else if (event.type == event.MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
             {
                 sf::Vector2f mouseXY = window.mapPixelToCoords(sf::Mouse::getPosition(window));
@@ -498,6 +483,7 @@ int main()
 
                     if (toSel && fromSel)
                     {
+                        results.clear();
                         for(auto i : data[from][to])
                             results.push_back(i);
 
@@ -505,14 +491,12 @@ int main()
                         hashResults = hashes[from].search(to);
                         stop = std::chrono::high_resolution_clock::now();
                         auto hDuration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start);
-                        cout << "Retrieved flights from hash tables in " << hDuration.count() << " nanoseconds.\n";
                         
 
                         start = std::chrono::high_resolution_clock::now();
                         treeResults = trees[from].search(to);
                         stop = std::chrono::high_resolution_clock::now();
                         auto sDuration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start);
-                        cout << "Retrieved flights from splay trees in " << sDuration.count() << " nanoseconds.\n";
 
                         sAccess.setString("Accessed In: "  + to_string(sDuration.count()) + " ns\n" + "Flights: " + to_string(treeResults.size()));
                         hAccess.setString("Accessed In: "  + to_string(hDuration.count()) + " ns\n" + "Flights: " + to_string(hashResults.size()));
@@ -532,6 +516,23 @@ int main()
                     {
                         pos++;
                         // cout << results[pos] -> actDepart << endl << results[pos] -> arrTime << endl;
+                    }
+                }
+                else if (restart.getGlobalBounds().contains(mouseXY))
+                {
+                    if(toSel)
+                    {
+                        toSel = false;
+                        airports[to]->setTexture(TextureManager::GetTexture("nodeOrange"));
+                        to = "";
+                        results.clear();
+                    }
+                    if(fromSel)
+                    {
+                        fromSel = false;
+                        airports[from]->setTexture(TextureManager::GetTexture("nodeOrange"));
+                        from = "";
+                        results.clear();
                     }
                 }
                 else if (test1.getGlobalBounds().contains(mouseXY) || test2.getGlobalBounds().contains(mouseXY) || test3.getGlobalBounds().contains(mouseXY))
@@ -577,14 +578,11 @@ int main()
                         hashResults = hashes[from].search(to);
                         stop = std::chrono::high_resolution_clock::now();
                         auto hDuration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start);
-                        cout << "Retrieved flights from hash tables in " << hDuration.count() << " nanoseconds.\n";
                         
-
                         start = std::chrono::high_resolution_clock::now();
                         treeResults = trees[from].search(to);
                         stop = std::chrono::high_resolution_clock::now();
                         auto sDuration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start);
-                        cout << "Retrieved flights from splay trees in " << sDuration.count() << " nanoseconds.\n";
 
                         sAccess.setString("Accessed In: "  + to_string(sDuration.count()) + " ns\n" + "Flights: " + to_string(treeResults.size()));
                         hAccess.setString("Accessed In: "  + to_string(hDuration.count()) + " ns\n" + "Flights: " + to_string(hashResults.size()));
@@ -593,8 +591,6 @@ int main()
                     }
                     else if (test3.getGlobalBounds().contains(mouseXY))
                     {
-                        //hashes.clear();
-                        //trees.clear();
 
                         start = std::chrono::high_resolution_clock::now();
                         for (pair<string, unordered_map<string, unordered_set<flightNode*>>> fromFlights : data) {
@@ -606,7 +602,6 @@ int main()
                         }
                         stop = std::chrono::high_resolution_clock::now();
                         splayInsert = std::chrono::duration_cast<std::chrono::milliseconds>(stop-start);
-
 
                         start = std::chrono::high_resolution_clock::now();
                         for (pair<string, unordered_map<string, unordered_set<flightNode*>>> fromFlights : data) {
@@ -620,8 +615,6 @@ int main()
 
                         sInsert.setString("Inserted Data In: " + to_string(splayInsert.count()) + " ms");
                         hInsert.setString("Inserted Data In: " + to_string(hashInsert.count()) + " ms");
-
-
                     } 
                 }
 
@@ -636,9 +629,11 @@ int main()
         }
 
         window.clear(sf::Color(0,0,0));
-        // window.clear(sf::Color(188,188,188));
+
+        // Static draw map
         window.draw(mapUS);
 
+        // Draw airport nodes
         if (!fromSel)
             for (auto i : airports)
                 window.draw(*i.second);
@@ -660,27 +655,47 @@ int main()
                 window.draw(*airports[to]);
             }
         }
+
+
+        // Static Total Flights, Splay title, Hash title, Splay insert time, Hash insert time
         window.draw(totalFlights);
         window.draw(title1);
         window.draw(title2);
         window.draw(sInsert);
         window.draw(hInsert);
 
+        // Static to and from texts
         window.draw(toText);
         window.draw(fromText);
 
-        toPort.setString(to);
-        window.draw(toPort);
-        fromPort.setString(from);
-        window.draw(fromPort);
-
+        // Static bounding boxes to separate
         window.draw(sepRight);
         window.draw(sepBottom);
         window.draw(sepMiddle);
         window.draw(sepStructs);
 
+
+        // Static search, test1, test2, test3
+        window.draw(search);
+        window.draw(test1);
+        window.draw(test2);
+        window.draw(test3);
+
+        // Variable to and from create the to airport, from airport, to location, and from location
+        toPort.setString(to);
+        window.draw(toPort);
+        fromPort.setString(from);
+        window.draw(fromPort);
+        window.draw(fromDecode);
+        window.draw(toDecode);
+
+
+        // displays the locations if selected, also displays restart icon
         if(fromSel)
+        {
             fromDecode.setString(port[from]);
+            window.draw(restart);
+        }
         else
             fromDecode.setString("");
         if(toSel)
@@ -688,29 +703,17 @@ int main()
         else
             toDecode.setString("");
 
-        window.draw(fromDecode);
-        window.draw(toDecode);
-
-        window.draw(search);
-        window.draw(test1);
-        window.draw(test2);
-        window.draw(test3);
-
+        // Displays results if present
         if (results.size() != 0)
         {
             window.draw(info1);
 
-            // string resDate = results[pos] -> date;
-            // string resCarrier = carrier[results[pos] -> carrierAirline];
             string resDepart = standardTime(to_string(results[pos] -> actDepart));
             int del = results[pos] -> departDelay;
             string resDDelay = to_string(abs(del)) + " minute(s) " + (del >= 0 ? "late" : "early");
             string resArr = standardTime(to_string(results[pos] -> arrTime));
             int arr = results[pos] -> arrDelay;
             string resADelay = to_string(abs(arr)) + " minute(s) " + (arr >= 0 ? "late" : "early");;
-
-
-
 
             string curResult = "\n" + results[pos] -> date + 
                                 "\n\n" +  carrier[results[pos] -> carrierAirline] +
@@ -721,12 +724,14 @@ int main()
             info2.setString(curResult);
             window.draw(info2);
 
+            // next and prev arrows, "x out of total" string
             string posStr = to_string(pos + 1) + " out of " + to_string(results.size());
             posCount.setString(posStr);
             window.draw(posCount);
             window.draw(next);
             window.draw(prev);
 
+            // Show how quickly data was accessed
             window.draw(sAccess);
             window.draw(hAccess);
 
